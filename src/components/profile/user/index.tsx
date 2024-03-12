@@ -1,50 +1,108 @@
+import profileService from '@/src/services/profileService'
 import styles from '@/styles/profile.module.scss'
+import { FormEvent, useEffect, useState } from 'react'
 import { Button, Form, FormGroup, Input, Label } from 'reactstrap'
+import ToastComponent from '../../common/toast'
+import { setTimeout } from 'timers'
+import { useRouter } from 'next/router'
 
 const UserForm = function () {
+  const router = useRouter()
+
+  const [color, setColor] = useState('')
+  const [toastIsOpen, setToatsIsOpen] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [email, setEmail] = useState('')
+  const [initialEmail, setInitialEmail] = useState('')
+  const [created_at, setCreated_at] = useState('')
+  const date = new Date(created_at)
+  const month = date.toLocaleDateString('default', { month: 'long' })
+
+  useEffect(() => {
+    profileService.fetchCurrent().then((user) => {
+      setFirstName(user.firstName)
+      setLastName(user.lastName)
+      setPhone(user.phone)
+      setEmail(user.email)
+      setInitialEmail(user.email)
+      setCreated_at(user.createdAt)
+    })
+  }, [])
+
+  const handleUserUpdate = async function (event: FormEvent<HTMLFormElement>){
+    event.preventDefault()
+
+    const res = await profileService.userUpdate({
+      firstName, lastName, phone, email, created_at
+    })
+
+    if(res === 200) {
+      setToatsIsOpen(true)
+      setErrorMessage('Informações alteradas com sucesso!')
+      setColor('bg-success')
+      setTimeout(() => setToatsIsOpen(false), 1000 * 3)
+      if(email != initialEmail) {
+        sessionStorage.clear()
+        router.push('/')
+      }
+    } else {
+      setToatsIsOpen(true)
+      setErrorMessage('Você não pode mudar para esse email!')
+      setColor('bg-danger')
+      setTimeout(() => setToatsIsOpen(false), 1000 * 3)
+    }
+  }
+
   return (
     <>
-      <Form className={styles.form}>
+      <Form onSubmit={handleUserUpdate} className={styles.form}>
         <div className={styles.formName}>
-          <p className={styles.nameAbbreviation}>NT</p>
-          <p className={styles.userName}>NAME TEST</p>
+          <p className={styles.nameAbbreviation}>
+            {firstName.slice(0, 1)}{lastName.slice(0, 1)}
+          </p>
+          <p className={styles.userName}>{`${firstName} ${lastName}`}</p>
         </div>
         <div className={styles.memberTime}>
           <img src="/profile/iconUserAccount.svg" alt="iconProfile" className={styles.memberTimeImg}/>
-          <p className={styles.memberTimeText}>Membro desde <br /> 20 de Abril de 2020</p>
+          <p className={styles.memberTimeText}>Membro desde <br /> {`${date.getDate()} de ${month} de $${date.getFullYear()}`}</p>
         </div>
         <hr />
         <div className={styles.inputFlexDiv}>
-	<FormGroup>
-	  <Label className={styles.label} for="firstName">
-	    NOME
-    </Label>
-    <Input
-    name="firstName"
-    type="text"
-    id="firstName"
-    placeholder="Qual o seu primeiro nome?"
-    required
-    maxLength={20}
-    className={styles.inputFlex}
-    value={"Name"}
-    />
-  </FormGroup>
-  <FormGroup>
-		<Label className={styles.label} for="lastName">
-		  SOBRENOME
-    </Label>
-    <Input
-    name="lastName"
-    type="text"
-    id="lastName"
-    placeholder="Qual o seu último nome?"
-    required
-    maxLength={20}
-    className={styles.inputFlex}
-    value={"Test"}
-    />
-  </FormGroup>
+          <FormGroup>
+            <Label className={styles.label} for="firstName">
+              NOME
+            </Label>
+            <Input
+            name="firstName"
+            type="text"
+            id="firstName"
+            placeholder="Qual o seu primeiro nome?"
+            required
+            maxLength={20}
+            className={styles.inputFlex}
+            value={firstName}
+            onChange={(event) => setFirstName(event.target.value)}
+            />
+          </FormGroup>
+          <FormGroup>
+            <Label className={styles.label} for="lastName">
+              SOBRENOME
+            </Label>
+            <Input
+            name="lastName"
+            type="text"
+            id="lastName"
+            placeholder="Qual o seu último nome?"
+            required
+            maxLength={20}
+            className={styles.inputFlex}
+            value={lastName}
+            onChange={(event) => setLastName(event.target.value)}
+            />
+          </FormGroup>
         </div>
         <div className={styles.inputNormalDiv}>
           <FormGroup>
@@ -58,7 +116,8 @@ const UserForm = function () {
             placeholder="(xx) 9xxxx-xxxx"
             required
             className={styles.input}
-            value={"+55 (21) 99999-9999"}
+            value={phone}
+            onChange={(event) => setPhone(event.target.value)}
             />
           </FormGroup>
           <FormGroup>
@@ -72,7 +131,8 @@ const UserForm = function () {
             placeholder="Coloque o seu email"
             required
             className={styles.input}
-            value={"testeemail@gmail.com"}
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
             />
           </FormGroup>
 
@@ -81,6 +141,7 @@ const UserForm = function () {
           </Button>
         </div>
       </Form>
+      <ToastComponent color={color} isOpen={toastIsOpen} message={errorMessage}/>
     </>
   )
 }
