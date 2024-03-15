@@ -13,6 +13,7 @@ const CoursePage = function () {
   const [course, setCourse] = useState<CourseType>()
   const [liked, setLiked] = useState(false)
   const [favorited, setFavorited] = useState(false)
+  const [loading, setLoading] = useState(true)
   const router = useRouter()
   const { id } = router.query
 
@@ -56,7 +57,21 @@ const CoursePage = function () {
     }
   }
 
+  useEffect(() => {
+    if(!sessionStorage.getItem('onebitflix-token')) {
+      router.push('/login')
+    } else {
+      setLoading(false)
+    }
+  }, [])
+
+  if(loading) {
+    return <PageSpinner />
+  }
+
   if(course === undefined) return <PageSpinner />
+
+
 
   return (
     <>
